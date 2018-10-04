@@ -1,6 +1,10 @@
 #!/bin/bash
-# Import the color library
-# --- CONSTANTS --------------------------------------------------------
+#
+#   ┌───────────────────────────────────────────────────────┐
+#   │  This Script is a pomodoro technique implementation   │
+#   └───────────────────────────────────────────────────────┘
+#
+# --- CONSTANTS ---------------------------------------------
 reset=$(tput setf 0)
 blue=$(tput setf 1)
 green=$(tput setf 2)
@@ -9,7 +13,7 @@ red=$(tput setf 4)
 magenta=$(tput setf 5)
 yellow=$(tput setf 6)
 grey=$(tput setf 7)
-#----------------------
+#--- Brighter colors ----------------------
 br_black=$(tput setf 8)
 br_red=$(tput setf 9)
 br_green=$(tput setf 10)
@@ -18,18 +22,9 @@ br_blue=$(tput setf 12)
 br_magenta=$(tput setf 13)
 br_cyan=$(tput setf 14)
 white=$(tput setf 15)
-#----------------------
-#TODO: Creat the interface
+#------------------------------------------
 info() {
-echo ""
-echo "######################################################"
-echo "# This script is a pomodoro tech implementation"
-echo "# for an easy use during coding/scripting/studying ...etc"
-echo "######################################################"
-}
-notifyme() {
-    notify-send $1
-
+    echo "${br_yellow}TIME NOW: ${br_cyan}$(date +%H:%M:%S)${white}"
 }
 focus(){
     min=0
@@ -63,11 +58,12 @@ defus() {
     done
     echo
 }
+clear
+info
+echo
 for i in {1..4}
 do
     focus
     notify-send "The end of focus time N°:${i}"
     defus
 done
-
-
