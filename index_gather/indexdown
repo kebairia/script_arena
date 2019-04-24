@@ -16,11 +16,15 @@ reset=$(tput sgr0 )
 #
 # This function is to check if the following creteria are fullfilled.
 filestamp=$(cat /dev/urandom | tr -cd 'a-f0-9' | head -c 32)
+database="~/tmp/indexdown.base"
 read -p "${bold}${yellow}URL: ${reset}" url
 read -p "${bold}${green}FILENAME: ${reset}" filename
 # save the filestamp in the database :)
-echo "$filename,$filestamp,$(date +%Y%m%d%H%M%S),$url" >> ~/tmp/down.base
+echo "$filename,$filestamp,$(date +%Y%m%d%H%M%S),$(pwd),$url" >> $database
 
+#####################################################
+# GET INDEX
+get_index(){
 # clean up the links 
 curl -L "$url" | grep "^<a href" | sed 's/<a\ href="//;s/">.*//' > .file.tmp
 while read line 
@@ -30,6 +34,7 @@ done < .file.tmp
 
 # remove the tempfile   
 rm .file.tmp
+}
 
 #####################################################
 # YOUTUBE-DL
@@ -54,8 +59,16 @@ infinite_loop_download(){
 # NOTIFICATIOON
 #####################################################
 #CHECK_IF_DOWNLOAD_EXIST
+#echo "$filename,$filestamp,$(date +%Y%m%d%H%M%S),$(pwd),$url"
+check_if_download_exist(){
+while read  name stamp time path link
+do
+    echo $name | $path
+done <  $database
+}
 #####################################################
 case $1 in
     -i | --infinite ) infinite_loop_download ;;
-    *) download;;
+    -c | --check ) check_if_download_exist ;;
+    *) get_index ; download ;;
 esac
