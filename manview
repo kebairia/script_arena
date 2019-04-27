@@ -1,0 +1,16 @@
+#!/bin/sh
+# TODO : enable the link forwarding in the manpage
+# man all the available man-pages -> take only the name and the section number
+# and output it to the dmenu program
+searchresult=$(man -k . | awk '{print $1" "$2}' |sort |  dmenu -l 20 -fn FantasqueSansMono-14)
+# extract the manpage name 
+manpage=$(echo $searchresult | cut -d " " -f 1)
+# extract the section number + some refine 
+section=$(echo $searchresult | cut -d " " -f 2 | sed 's/(//;s/)//')
+# if the length of t:e string (manpage) = 0 , return 1
+# print the manpage otherwise
+if [ -z $manpage ];then
+    return 1
+else
+    man -Tpdf $section $manpage | zathura -
+fi
