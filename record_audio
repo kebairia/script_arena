@@ -1,0 +1,3 @@
+#!/bin/env sh
+notify-send " recording audio file on ~/snd/my_records/${1}.mp3" \
+    && ffmpeg -f alsa -ac 2 -i default -acodec libmp3lame -ab 320k $HOME/snd/my_records/${1}.mp3
