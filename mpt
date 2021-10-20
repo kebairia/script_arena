@@ -23,6 +23,21 @@ vid_info="$( youtube-dl -F ${link} )"
 maxfilesize=2048
 vid_log_file=${XDG_CACHE_HOME}/mpt.log
 
+# -------------------
+# 
+# -------------------
+command_exists(){
+    command -v "$@" >/dev/null 2>&1
+}
+# check if mpv and youtube-dl is installed
+for package in mpv youtube-dl; do
+    if ! command_exists $package; then
+	_error "${package} is not installed.\n"
+	_info "Installing..." \
+	    && pacman --noconfirm -S ${package} &>/dev/null \
+	    && _done
+    fi
+done
 # Extract the sound code
 snd_code=$(echo "${vid_info}" \
 	       | awk '/audio only/{print $1" "$NF}' \
