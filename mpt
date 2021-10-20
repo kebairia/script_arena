@@ -38,27 +38,30 @@ for package in mpv youtube-dl; do
 	    && _done
     fi
 done
+# -------------------
+# Extract video data
+# -------------------
 # Extract the sound code
 snd_code=$(echo "${vid_info}" \
 	       | awk '/audio only/{print $1" "$NF}' \
-	| sort -n -k2 \
-	| head -1 \
-	| awk '{print $1}')
+	       | sort -n -k2 \
+	       | head -1 \
+	       | awk '{print $1}')
 # prompt me for video resolutions available, then extract its code
 vid_code=$(echo "${vid_info}" \
 	       | awk '/video only/{print $1" "$3" "$NF}' \
-	| sort -n -k3 \
-	| sort -nu -k2 \
-	|  dmenu -l 20 -fn FantasqueSansMono-13 -p " Select video quality:" \
-	| awk '{print $1}')
+	       | sort -n -k3 \
+	       | sort -nu -k2 \
+	       |  dmenu -l 20 -fn FantasqueSansMono-13 -p " Select video quality:" \
+	       | awk '{print $1}')
 
 
 # combine the two format and play them in realtime
 [ ! -z $link ] && setsid mpv --ytdl-raw-options=format="$vid_code"+"$snd_code" ${link} 
 
-#####################
+#--------------------
 #      LOGGING
-#####################
+#--------------------
 # Extract video title
 vid_title="$( youtube-dl --get-title ${link} )"
 # log the video's link into ~/.cache/mpt.log, before the video starts 
