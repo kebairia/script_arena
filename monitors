@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# A script for detecting and selecting all displays.
+# Switch bettween two screen
+switchscreen(){
+    # if $chosen != zero , extract the screen resolution than switch
+    if [ -n $chosen ];then
+        res_chosen=$(xrandr --query | sed -n "/^$chosen/,/\+/p" |\
+        tail -n 1 | awk '{print $1}')
+    fi
+    xrandr  --output "$chosen" --auto --mode "$res_chosen"  $( echo "$screens" | grep -v "$chosen" | awk '{print "--output" , $1, "--off"}' )
+
+}
+
+allposs=$(xrandr | grep "connected")
+screens=$(echo "$allposs" | grep " connected" | awk '{print $1}') 
+chosen=$(echo "$screens\nmanual" | dmenu -i -fn FantasqueSansMono-17 -p " Select Display: ") 
+case "$chosen" in
+    "manual" ) arandr ; exit 0 ;;
+    *) switchscreen 
+esac
+bgs -zR ~/.config/wall.png               # Fix background if screen size/arangement has changed.
+/home/zakaria/.local/bin/remaps
+pgrep -x dunst 2> /dev/null && killall dunst && setsid dunst &      # Restart dunst to ensure proper location on the screen.

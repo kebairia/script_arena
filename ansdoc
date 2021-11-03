@@ -1,0 +1,13 @@
+#!/bin/env sh
+# cat the ansible-doc file
+# dmenu : show the results in: 20 lines 
+#       : -i -> matches menu items case insensitively
+#       : FantasqueSansMono font with size 14
+page=$(cat ~/.config/sys.d/ansible-doc | dmenu -i -l 20 -fn FantasqueSansMono-14 )
+page=$(echo $page | cut -d " " -f1)
+# if len($page) != zero --> show ansible-doc $page
+if [ -z $page ];then
+    exit 0
+else
+    st -e ansible-doc $page
+fi

@@ -1,0 +1,19 @@
+#!/bin/sh
+# Gives a dmenu prompt to mount unmounted drives(size >= 1GB).
+#PS: you can use the /etc/sudoers file and do the following:
+# %whell ALL(All) = NOPASSWD /usr/bin/mount --> to make the command mount does'nt
+# need a password
+usbdrives=$(lsblk -nio "path,size,type,mountpoint" | grep "part $" | awk '{print $1 " "$2}' | grep -v ".*M")
+# Available unmounted drives prompted to dmenu --> get the chosen drive
+unmounted_drives(){
+    chosen=$(echo "$usbdrives" | dmenu  -fn "Fira Code-12"  -i -p  " DRIVES: " | awk '{ print $1}')
+}
+mount_drive(){
+    [ ! -z ${chosen} ] \
+        && mount_info=$(udisksctl mount -b ${chosen}) \
+        && notify-send "  ${mount_info}"
+}
+unmounted_drives
+mount_drive
+
+

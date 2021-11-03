@@ -1,0 +1,45 @@
+#!/bin/env sh
+#----------------------------------------------------------
+# MPT: ~o(( a script to watch youtube videos using mpv ))o~
+#----------------------------------------------------------
+# mpv uses directly the best video quality that a particular youtube video provides to play
+# this script helps you to select the quality you want
+
+#TODO: don't process a link that its already in the queue
+## use --batch-file  
+#TODO: audio only option
+#TODO: better dmenu interface
+#TODO: if the link was from invidious.snopyta.org, substitute it with youtube.com
+
+# create a tempfile and store the video quality and codes in it
+link="${1:-$(xclip -o -selection clipboard)}" && notify-send " Loading video's info ..."
+# Extract video infos
+vid_info="$( youtube-dl -F ${link} )"
+maxfilesize=2048
+vid_log_file=${XDG_CACHE_HOME}/ytd.log
+
+# Extract the sound code
+snd_code=$(echo "${vid_info}" \
+	       | awk '/audio only/{print $1" "$NF}' \
+	| sort -n -k2 \
+	| head -1 \
+	| awk '{print $1}')
+# prompt me for video resolutions available, then extract its code
+vid_code=$(echo "${vid_info}" \
+	       | awk '/video only/{print $1" "$3" "$NF}' \
+	| sort -n -k3 \
+	| sort -nu -k2 \
+	|  dmenu -l 20 -fn FantasqueSansMono-13 -p " Select video quality:" \
+	| awk '{print $1}')
+
+
+# combine the two format and play them in realtime
+[ ! -z $link ] && youtube-dl --add-metadata -ic -o '%(title)s.%(ext)s' --format="$vid_code"+"$snd_code" ${link} 
+
+#####################
+#      LOGGING
+#####################
+# Extract video title
+vid_title="$( youtube-dl --get-title ${link} )"
+# log the video's link into ~/.cache/mpt.log, before the video starts 
+echo "[$(date '+%F_%T')]:${link},${vid_title}" >> ${vid_log_file}

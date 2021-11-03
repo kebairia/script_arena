@@ -1,0 +1,14 @@
+#!/bin/env sh
+# Gives a dmenu prompt to mount unmounted drives.
+drives=$(lsblk -nrpo "name,size,type,mountpoint" | awk '$3=="part"&&$4!~/\/boot|\/home$|SWAP/&&length($4)>1&&$1!~".*sda3|.*sda4|.*sda6"{printf "%s %s\n",$1,$2}' | sort -r)
+# Available mounted drives
+mounted_drives(){
+    chosen=$(echo "$drives" | dmenu  -fn "Fira Code-12"  -i -p  "  MOUNTED DRIVES: " | awk '{ print $1}')
+}
+unmount_drive(){
+    [ ! -z ${chosen} ] \
+        && unmount_info=$(udisksctl unmount -b ${chosen}) \
+        && notify-send "  ${unmount_info}"
+}
+mounted_drives
+unmount_drive
