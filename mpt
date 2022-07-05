@@ -1,9 +1,4 @@
 #!/bin/env sh
-#┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-#┃         ┏┳┓┏━┓━┳━  ┏━┓┏━┓┏━┓╻┏━┓━┳━         ┃
-#┃         ┃╹┃┣━┛ ┃   ┗━┓┃  ┣┳┛┃┣━┛ ┃          ┃
-#┃         ╹ ╹╹   ╹   ┗━┛┗━┛╹┗╸╹╹   ╹          ┃
-#┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 #----------------------------------------------------------
 # MPT: ~o(( a script to watch youtube videos using mpv ))o~
 #----------------------------------------------------------
@@ -15,71 +10,83 @@
 #TODO: audio only option
 #TODO: better dmenu interface
 #TODO: if the link was from invidious.snopyta.org, substitute it with youtube.com
+#INFO
+VERSION=0.9
 
+link="${1:-$(xclip -o -selection clipboard)}" && notify-send "  Loading Video..."
 # create a tempfile and store the video quality and codes in it
-link="${1:-$(xclip -o -selection clipboard)}" && notify-send " Loading Youtube Video..."
-# Extract video infos
+_twitch(){
+    vid_quality=$(echo '160p\n360p\n480p\n720p60\n1080p60' \
+        | dmenu -l 20 -fn FantasqueSansMono-13 -p " Select video quality:") 
+
+    mpv --ytdl-format="$vid_quality" "$link" \
+    || notify-send ' error occured'
+
+}
+_youtube(){
+    vid_info="$( youtube-dl -F ${link} )"
+    maxfilesize=2048
+    vid_log_file=${XDG_CACHE_HOME}/mpt.log
+    
+    # Extract the sound code
+    snd_code=$(echo "${vid_info}" \
+    	       | awk '/audio only/{print $1" "$NF}' \
+    	| sort -n -k2 \
+    	| head -1 \
+    	| awk '{print $1}')
+    # prompt me for video resolutions available, then extract its code
+    vid_code=$(echo "${vid_info}" \
+    	       | awk '/video only/{print $1" "$3" "$NF}' \
+    	| sort -n -k3 \
+    	| sort -nu -k2 \
+    	|  dmenu -l 20 -fn FantasqueSansMono-13 -p " Select video quality:" \
+    	| awk '{print $1}')
+    
+    
+    # combine the two format and play them in realtime
+    setsid mpv --ytdl-raw-options=format="$vid_code"+"$snd_code" ${link} 
+    
+    #      LOGGING
+    
+    # Extract video title
+    vid_title="$( youtube-dl --get-title ${link} )"
+    # log the video's link into ~/.cache/mpt.log, before the video starts 
+    echo "[$(date '+%F_%T')]:${link},${vid_title}" >> ${vid_log_file}
+
+}
+audio(){
 vid_info="$( youtube-dl -F ${link} )"
 maxfilesize=2048
 vid_log_file=${XDG_CACHE_HOME}/mpt.log
 
-# -------------------
-# 
-# -------------------
-command_exists(){
-    command -v "$@" >/dev/null 2>&1
-}
-# check if mpv and youtube-dl is installed
-for package in mpv youtube-dl; do
-    if ! command_exists $package; then
-	_error "${package} is not installed.\n"
-	_info "Installing..." \
-	    && pacman --noconfirm -S ${package} &>/dev/null \
-	    && _done
-    fi
-done
-# -------------------
-# Extract video data
-# -------------------
 # Extract the sound code
 snd_code=$(echo "${vid_info}" \
 	       | awk '/audio only/{print $1" "$NF}' \
-	       | sort -n -k2 \
-	       | head -1 \
-	       | awk '{print $1}')
-# prompt me for video resolutions available, then extract its code
-vid_code=$(echo "${vid_info}" \
-	       | awk '/video only/{print $1" "$3" "$NF}' \
-	       | sort -n -k3 \
-	       | sort -nu -k2 \
-	       |  dmenu -l 20 -fn FantasqueSansMono-13 -p " Select video quality:" \
-	       | awk '{print $1}')
+	| sort -n -k2 \
+	| head -1 \
+	| awk '{print $1}')
+setsid mpv --ytdl-raw-options=format="$snd_code" ${link} 
 
+}
+main(){
+    [ ! -z $link ] && echo $link | grep "twitch" && _twitch || _youtube
+}
+usage(){
+    echo "
+mpt [OPTION] [LINK]
 
-# combine the two format and play them in realtime
-[ ! -z $link ] && setsid mpv --ytdl-raw-options=format="$vid_code"+"$snd_code" ${link} 
-
-#--------------------
-#      LOGGING
-#--------------------
-# Extract video title
-vid_title="$( youtube-dl --get-title ${link} )"
-# log the video's link into ~/.cache/mpt.log, before the video starts 
-echo "[$(date '+%F_%T')]:${link},${vid_title}" >> ${vid_log_file}
-# needs maintaince
-# last_stamp_date=$(tail -1 ~/.cache/mpt.log  \
-    #                       | sed 's/\[//g;s/\]//g' \
-    #                       | awk -F '_' '{print $1}')
-# # if last_stamp_date was'nt empty, and it is not equal for today's date, make a line with today's date
-# [ ! -z $last_stamp_date ] \
-    #     && [ ! "$last_stamp_date" == "$(date '+%F')"] \
-    #     && echo "------ $(date '+%F_%T') ------"
-#####################
-#      LOGROTATE
-#####################
-#FILESIZE=$(du -b "${LOG_FILE}" | tr -s '\t' ' ' | cut -d ' ' -f1)
-#if [ ${FILESIZE} -gt ${MAXFILESIZE}];then
-    #timestamp=$(date '+%s')
-    #mv ${LOG_FILE} ${LOG_FILE}.${timestamp}
-    #touch ${LOG_FILE}
-#fi
+OPTION:
+    -v    print version
+    -h    print this help
+LINK:
+    put here a twitch or a youtube link, a list of qualities will display, choose the quality
+    that suts you...ENJOY
+"
+}
+## Extract video infos
+case $1 in
+    -v | --version ) echo mpt ${VERSION};;
+    -h | --help ) usage ;;
+    #-a | --audio) audio ;;
+     * ) main ;;
+esac
